@@ -21,3 +21,5 @@ jobs:
         run: mvn clean install
       - name: Run tests
         run: mvn test
+      - name: Build Docker image
+        run: docker build -t ci-cd-project-github-action .
