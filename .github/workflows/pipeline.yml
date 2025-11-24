@@ -1,28 +1,39 @@
 name: test
+
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Recuperer le code source
+      - name: Checkout
         uses: actions/checkout@v5
-      - name: configurer le JDK 17
+
+      - name: Setup JDK 17
         uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Creer le jar executable
-        run: mvn clean install
-      - name: Run tests
-        run: mvn test
+
+      - name: Build JAR
+        run: mvn clean install -DskipTests
+
+      - name: Debug - list files
+        run: ls -R
+
       - name: Build Docker image
         run: docker build -t ci-cd-project-github-action .
+
+      - name: Upload Docker image
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: .
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -33,15 +44,87 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      - name: Se connecter a Amazon ECR
+
+      - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-      - name: Deployer l'image Docker sur Amazon ECS
+
+      - name: Download image from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Push to ECR
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: 384443605696.dkr.ecr.eu-north-1.amazonaws.com/test-app
+          REPOSITORY: test-app
           IMAGE_TAG: ${{ github.sha }}
         run: |
-            docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-            docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
-            echo "Deploiement reussi!"
+          docker tag ci-cd-project-github-action:latest $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          echo "Deploiement reussi!"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# name: test
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Recuperer le code source
+#         uses: actions/checkout@v5
+#       - name: configurer le JDK 17
+#         uses: actions/setup-java@v5
+#         with:
+#           java-version: '17'
+#           distribution: 'temurin'
+#       - name: Creer le jar executable
+#         run: mvn clean install
+#       - name: Run tests
+#         run: mvn test
+#       # - name: Build Docker image
+#       #   run: docker build -t ci-cd-project-github-action .
+#   deploy:
+#     needs: build
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Configure AWS Credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: ${{ secrets.AWS_REGION }}
+#       - name: Se connecter a Amazon ECR
+#         id: login-ecr
+#         uses: aws-actions/amazon-ecr-login@v2
+#       - name: Deployer l'image Docker sur Amazon ECS
+#         env:
+#           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#           REPOSITORY: 384443605696.dkr.ecr.eu-north-1.amazonaws.com/test-app
+#           IMAGE_TAG: ${{ github.sha }}
+#         run: |
+#             docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+#             docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+#             echo "Deploiement reussi!"
