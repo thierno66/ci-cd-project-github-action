@@ -35,7 +35,7 @@ jobs:
       - name: Deployer l'image Docker sur Amazon ECS
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: 384443605696.dkr.ecr.eu-north-1.amazonaws.com/test-app
+          REPOSITORY: 384443605696.dkr.ecr.eu-north-1.amazonaws.com/test-repository
           IMAGE_TAG: ${{ github.sha }}
         run: |
             docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
