@@ -10,12 +10,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK 17
-        uses: actions/setup-java@v2
+      - name: Recuperer le code source
+        uses: actions/checkout@v5
+      - name: configurer le JDK 17
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
-      - name: Build with Maven
+          distribution: 'temurin'
+      - name: Creer le jar executable
         run: mvn clean install
       - name: Run tests
         run: mvn test
